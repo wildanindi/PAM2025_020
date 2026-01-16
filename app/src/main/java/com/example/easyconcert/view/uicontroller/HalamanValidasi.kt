@@ -1,10 +1,13 @@
 package com.example.easyconcert.view.uicontroller
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
@@ -20,10 +23,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.easyconcert.data.UserSession // ✅ Pastikan Import ini ada
 import com.example.easyconcert.data.model.Concert
 import com.example.easyconcert.viewmodel.HomeViewModel
 import com.example.easyconcert.viewmodel.ManageConcertViewModel
@@ -39,13 +45,14 @@ fun HalamanValidasi(
 ) {
     val validationViewModel: ValidationViewModel = viewModel(factory = PenyediaViewModel.Factory)
     val manageViewModel: ManageConcertViewModel = viewModel(factory = PenyediaViewModel.Factory)
+    val context = LocalContext.current // ✅ Untuk menampilkan Toast
 
     // State Logic
     var ticketCode by remember { mutableStateOf("") }
     val validationState = validationViewModel.validationState.collectAsState().value
     val concertListState = viewModel.uiState.collectAsState().value
 
-    // 👇 STATE BARU: UNTUK DIALOG KONFIRMASI HAPUS
+    // State Dialog Hapus
     var showDeleteDialog by remember { mutableStateOf(false) }
     var concertToDelete by remember { mutableStateOf<Concert?>(null) }
 
@@ -57,19 +64,27 @@ fun HalamanValidasi(
     val SuccessGreen = Color(0xFF22C55E)
     val ErrorRed = Color(0xFFEF4444)
 
+    // --- FUNGSI HELPER: CEK TIKET ---
+    fun performCheck() {
+        val token = UserSession.token // ✅ Ambil Token Asli dari Login
+        if (token.isNotEmpty()) {
+            validationViewModel.validateTicket(token, ticketCode)
+        } else {
+            Toast.makeText(context, "Sesi habis, silakan login ulang.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     Scaffold(
         containerColor = DarkBackground
     ) { padding ->
 
-        // 👇 1. KOMPONEN ALERT DIALOG (Muncul jika showDeleteDialog = true)
+        // KOMPONEN ALERT DIALOG (Hapus Data)
         if (showDeleteDialog && concertToDelete != null) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = false },
-                containerColor = CardBackground, // Warna Background Dialog
+                containerColor = CardBackground,
                 icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = ErrorRed) },
-                title = {
-                    Text(text = "Hapus Konser?", color = TextWhite, fontWeight = FontWeight.Bold)
-                },
+                title = { Text(text = "Hapus Konser?", color = TextWhite, fontWeight = FontWeight.Bold) },
                 text = {
                     Text(
                         text = "Anda yakin ingin menghapus konser '${concertToDelete?.eventName}'? Data yang dihapus tidak dapat dikembalikan.",
@@ -79,24 +94,19 @@ fun HalamanValidasi(
                 confirmButton = {
                     Button(
                         onClick = {
-                            // LOGIKA HAPUS DATA DIJALANKAN DI SINI
                             concertToDelete?.let { concert ->
                                 manageViewModel.deleteConcert(concert.concertId, onSuccess = {
-                                    viewModel.getConcerts() // Refresh Data
+                                    viewModel.getConcerts()
                                 })
                             }
-                            showDeleteDialog = false // Tutup Dialog
+                            showDeleteDialog = false
                             concertToDelete = null
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = ErrorRed)
-                    ) {
-                        Text("HAPUS", fontWeight = FontWeight.Bold)
-                    }
+                    ) { Text("HAPUS", fontWeight = FontWeight.Bold) }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showDeleteDialog = false }) {
-                        Text("Batal", color = TextWhite)
-                    }
+                    TextButton(onClick = { showDeleteDialog = false }) { Text("Batal", color = TextWhite) }
                 }
             )
         }
@@ -109,7 +119,7 @@ fun HalamanValidasi(
             contentPadding = PaddingValues(bottom = 32.dp)
         ) {
 
-            // --- HEADER HALAMAN ---
+            // --- HEADER ---
             item {
                 Spacer(modifier = Modifier.height(24.dp))
                 Row(
@@ -118,17 +128,8 @@ fun HalamanValidasi(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text(
-                            text = "Dashboard Crew",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = TextWhite
-                        )
-                        Text(
-                            text = "Manage & Validate",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
-                        )
+                        Text("Dashboard Crew", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = TextWhite)
+                        Text("Manage & Validate", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
                     }
                     IconButton(
                         onClick = onLogoutClick,
@@ -150,13 +151,9 @@ fun HalamanValidasi(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
-                        Text(
-                            text = "Validasi Tiket",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = TextWhite
-                        )
+                        Text("Validasi Tiket", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TextWhite)
                         Spacer(modifier = Modifier.height(16.dp))
+
                         OutlinedTextField(
                             value = ticketCode,
                             onValueChange = { ticketCode = it },
@@ -172,13 +169,17 @@ fun HalamanValidasi(
                                 unfocusedLabelColor = Color.Gray,
                                 cursorColor = AccentBlue
                             ),
-                            singleLine = true
+                            singleLine = true,
+                            // ✅ FITUR BARU: Tekan Enter di keyboard langsung cek
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(
+                                onDone = { performCheck() }
+                            )
                         )
                         Spacer(modifier = Modifier.height(16.dp))
+
                         Button(
-                            onClick = {
-                                validationViewModel.validateTicket("TOKEN_CREW", ticketCode)
-                            },
+                            onClick = { performCheck() }, // ✅ Panggil fungsi helper
                             modifier = Modifier.fillMaxWidth().height(50.dp),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
@@ -205,9 +206,7 @@ fun HalamanValidasi(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .fillMaxWidth(),
+                            modifier = Modifier.padding(16.dp).fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(iconStatus, null, tint = statusColor, modifier = Modifier.size(32.dp))
@@ -222,7 +221,7 @@ fun HalamanValidasi(
                 }
             }
 
-            // --- HEADER DAFTAR KONSER ---
+            // --- DAFTAR KONSER ---
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -243,18 +242,14 @@ fun HalamanValidasi(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // --- 5. LIST KONSER (ADMIN) ---
+            // --- LIST ITEM KONSER ---
             items(concertListState.concertList) { concert ->
                 AdminConcertCardDark(
                     concert = concert,
                     onEditClick = { onEditConcertClick(concert.concertId) },
-
-                    // 👇 PERUBAHAN DI SINI:
-                    // Saat tombol hapus ditekan, JANGAN langsung hapus.
-                    // Tapi simpan datanya ke 'concertToDelete' dan buka Dialog.
                     onDeleteClick = {
-                        concertToDelete = concert // Simpan data sementara
-                        showDeleteDialog = true   // Munculkan popup
+                        concertToDelete = concert
+                        showDeleteDialog = true
                     }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -278,19 +273,14 @@ fun AdminConcertCardDark(
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Row(
-            modifier = Modifier
-                .padding(12.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(12.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
                 model = concert.posterImage,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color.Gray)
+                modifier = Modifier.size(60.dp).clip(RoundedCornerShape(8.dp)).background(Color.Gray)
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -298,12 +288,8 @@ fun AdminConcertCardDark(
                 Text(concert.date, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             }
             Row {
-                IconButton(onClick = onEditClick) {
-                    Icon(Icons.Default.Edit, "Edit", tint = Color(0xFF3B82F6))
-                }
-                IconButton(onClick = onDeleteClick) {
-                    Icon(Icons.Default.Delete, "Delete", tint = Color(0xFFEF4444))
-                }
+                IconButton(onClick = onEditClick) { Icon(Icons.Default.Edit, "Edit", tint = Color(0xFF3B82F6)) }
+                IconButton(onClick = onDeleteClick) { Icon(Icons.Default.Delete, "Delete", tint = Color(0xFFEF4444)) }
             }
         }
     }

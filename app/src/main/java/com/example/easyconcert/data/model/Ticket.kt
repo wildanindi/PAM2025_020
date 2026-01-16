@@ -43,6 +43,6 @@ data class BookingRequest(
 
 // 3. Model Request Validasi (Data yang dikirim Crew saat input kode)
 data class ValidationRequest(
-    @SerializedName("ticket_code")
+    @SerializedName("ticketCode")
     val ticketCode: String
 )
