@@ -2,6 +2,7 @@ package com.example.easyconcert.data.repository
 
 
 import com.example.easyconcert.data.model.BookingRequest
+import com.example.easyconcert.data.model.DashboardStats
 import com.example.easyconcert.data.model.Ticket
 import com.example.easyconcert.data.model.ValidationRequest
 import com.example.easyconcert.data.model.WebResponse
@@ -41,6 +42,10 @@ class TicketRepository(private val apiService: ApiService) {
         val request = ValidationRequest(ticketCode = ticketCode)
 
         return apiService.validateTicket("Bearer $token", request)
+    }
+
+    suspend fun getDashboardStats(token: String): WebResponse<DashboardStats> {
+        return apiService.getDashboardStats("Bearer $token")
     }
 
 }

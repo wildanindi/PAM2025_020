@@ -63,4 +63,13 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Body request: ValidationRequest
     ): WebResponse<Ticket>
+
+
+    // ... fungsi lainnya ...
+
+    // Tambahkan ini:
+    @GET("tickets/stats")
+    suspend fun getDashboardStats(
+        @Header("Authorization") token: String
+    ): WebResponse<DashboardStats>
 }
