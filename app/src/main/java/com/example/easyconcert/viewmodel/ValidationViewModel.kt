@@ -3,6 +3,7 @@ package com.example.easyconcert.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.easyconcert.data.model.Ticket
 import com.example.easyconcert.data.repository.TicketRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,7 +11,8 @@ import kotlinx.coroutines.launch
 
 data class ValidationState(
     val isValid: Boolean = false,
-    val message: String? = null
+    val message: String? = null,
+    val ticketData: Ticket? = null
 )
 
 class ValidationViewModel(private val repository: TicketRepository) : ViewModel() {

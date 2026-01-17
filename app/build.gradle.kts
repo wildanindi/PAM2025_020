@@ -60,6 +60,19 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation("androidx.compose.material:material-icons-extended:1.7.6")
     implementation("com.google.zxing:core:3.5.2")
+
+    // --- 3. CAMERAX & ML KIT (Untuk Scanner QR) ---
+    val camerax_version = "1.3.0"
+    implementation("androidx.camera:camera-camera2:$camerax_version")
+    implementation("androidx.camera:camera-lifecycle:$camerax_version")
+    implementation("androidx.camera:camera-view:$camerax_version")
+
+    // Google ML Kit untuk Barcode Scanning
+    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+
+    // Permission Helper
+    implementation("com.google.accompanist:accompanist-permissions:0.32.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
